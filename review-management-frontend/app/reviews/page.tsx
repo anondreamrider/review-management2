@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { Star, ThumbsUp, ThumbsDown, MessageSquare } from 'lucide-react'
+import { apiService } from '@/lib/api-service'
 
 type Review = {
   id: string;
@@ -49,7 +50,9 @@ const mockReviews: Review[] = [
 ]
 
 export default function Reviews() {
-  const [reviews] = useState<Review[]>(mockReviews)
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [selectedPlatform, setSelectedPlatform] = useState('All');
+  const [enabledPlatforms, setEnabledPlatforms] = useState<string[]>([]);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null)
   const [aiReply, setAiReply] = useState('')
   const [userReply, setUserReply] = useState('')
@@ -57,6 +60,29 @@ export default function Reviews() {
   const [isSubmittingReply, setIsSubmittingReply] = useState(false)
 
   const { toast } = useToast()
+
+  useEffect(() => {
+    fetchEnabledPlatforms();
+    fetchReviews(selectedPlatform);
+  }, [selectedPlatform]);
+
+  const fetchEnabledPlatforms = async () => {
+    try {
+      const response = await apiService.get('/platforms/enabled');
+      setEnabledPlatforms(response.platforms);
+    } catch (error) {
+      console.error('Error fetching enabled platforms:', error);
+    }
+  };
+
+  const fetchReviews = async (platform: string) => {
+    try {
+      const response = await apiService.get(`/reviews?platform=${platform}`);
+      setReviews(response);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    }
+  };
 
   const generateAIReply = async (reviewId: string) => {
     setIsGeneratingReply(true)

@@ -5,9 +5,9 @@ export class GoogleService {
   private apiKey: string;
   private placeId: string;
 
-  constructor() {
-    this.apiKey = process.env.GOOGLE_API_KEY || '';
-    this.placeId = process.env.GOOGLE_PLACE_ID || '';
+  constructor(credentials: { apiKey: string; placeId: string }) {
+    this.apiKey = credentials.apiKey;
+    this.placeId = credentials.placeId;
   }
 
   async fetchGoogleReviews() {
@@ -48,9 +48,9 @@ export class GoogleService {
         );
       }
       
-      return { success: true, message: 'Reviews synced successfully' };
+      return { success: true, message: 'Google reviews synced successfully' };
     } catch (error) {
-      console.error('Error syncing reviews:', error);
+      console.error('Error syncing Google reviews:', error);
       throw error;
     }
   }

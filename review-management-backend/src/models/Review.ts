@@ -9,10 +9,14 @@ export interface IReview extends Document {
   date: Date;
   aiResponse?: string;
   userResponse?: string;
-  platformData?: {
+  platformData: {
     googleReviewId?: string;
+    yelpReviewId?: string;
+    facebookReviewId?: string;
     profileUrl?: string;
   };
+  sentiment?: string;
+  isResponded: boolean;
 }
 
 const ReviewSchema = new Schema({
@@ -26,8 +30,12 @@ const ReviewSchema = new Schema({
   userResponse: String,
   platformData: {
     googleReviewId: String,
+    yelpReviewId: String,
+    facebookReviewId: String,
     profileUrl: String
-  }
+  },
+  sentiment: String,
+  isResponded: { type: Boolean, default: false }
 });
 
 export default mongoose.model<IReview>('Review', ReviewSchema);

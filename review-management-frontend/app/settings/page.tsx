@@ -9,51 +9,43 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 
 export default function Settings() {
   const [googleApiKey, setGoogleApiKey] = useState('')
   const [placeId, setPlaceId] = useState('')
+  const [platforms] = useState(['Google', 'Yelp', 'Facebook'])
+  const [enabledPlatforms, setEnabledPlatforms] = useState<Record<string, boolean>>({})
+  const [platformCredentials, setPlatformCredentials] = useState<Record<string, any>>({})
   const { toast } = useToast()
 
-  const handleConnectGoogle = async () => {
-    try {
-      await apiService.post('/google/connect', {
-        apiKey: googleApiKey,
-        placeId: placeId
-      });
-      
-      toast({
-        title: "Success",
-        description: "Google account connected successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to connect Google account",
-        variant: "destructive",
-      });
-    }
-  };
+  const handlePlatformToggle = (platform: string, checked: boolean) => {
+    setEnabledPlatforms(prev => ({ ...prev, [platform]: checked }))
+  }
 
-  const handleSyncReviews = async () => {
+  const handleCredentialChange = (platform: string, field: string, value: string) => {
+    setPlatformCredentials(prev => ({
+      ...prev,
+      [platform]: { ...prev[platform], [field]: value }
+    }))
+  }
+
+  const handleSyncPlatform = async (platform: string) => {
     try {
-      await apiService.post('/google/sync-reviews', {
-        apiKey: googleApiKey,
-        placeId: placeId
-      });
-      
+      await apiService.post(`/${platform}/sync-reviews`, platformCredentials[platform])
       toast({
         title: "Success",
-        description: "Reviews synced successfully",
-      });
+        description: `${platform} reviews synced successfully`,
+      })
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to sync reviews",
+        description: `Failed to sync ${platform} reviews`,
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   return (
     <div className="space-y-4">
@@ -63,7 +55,7 @@ export default function Settings() {
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          <TabsTrigger value="google">Google Reviews</TabsTrigger>
+         
         </TabsList>
         <TabsContent value="account" className="space-y-4">
           <div className="grid w-full max-w-sm items-center gap-1.5">
@@ -87,46 +79,119 @@ export default function Settings() {
           </div>
         </TabsContent>
         <TabsContent value="integrations" className="space-y-4">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="api-key">API Key</Label>
-            <Input type="text" id="api-key" placeholder="Your API Key" />
-          </div>
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="webhook-url">Webhook URL</Label>
-            <Input type="url" id="webhook-url" placeholder="https://your-webhook-url.com" />
-          </div>
-          <Button>Save Integrations</Button>
-        </TabsContent>
-        <TabsContent value="google" className="space-y-4">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="google-api-key">Google API Key</Label>
-            <Input 
-              type="password" 
-              id="google-api-key" 
-              placeholder="Enter your Google API Key" 
-              value={googleApiKey}
-              onChange={(e) => setGoogleApiKey(e.target.value)}
+  <div className="grid gap-4">
+    {/* Google Integration */}
+    <Card>
+      <CardHeader>
+        <CardTitle>Google Reviews Integration</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="google-enabled"
+              checked={enabledPlatforms['google']}
+              onCheckedChange={(checked) => handlePlatformToggle('google', checked)}
             />
+            <Label>Enable Google Reviews</Label>
           </div>
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="place-id">Google Place ID</Label>
-            <Input 
-              type="text" 
-              id="place-id" 
-              placeholder="Enter your Place ID" 
-              value={placeId}
-              onChange={(e) => setPlaceId(e.target.value)}
+          {enabledPlatforms['google'] && (
+            <div className="space-y-2">
+              <Input
+                placeholder="Google API Key"
+                type="password"
+                value={platformCredentials.google?.apiKey || ''}
+                onChange={(e) => handleCredentialChange('google', 'apiKey', e.target.value)}
+              />
+              <Input
+                placeholder="Place ID"
+                value={platformCredentials.google?.placeId || ''}
+                onChange={(e) => handleCredentialChange('google', 'placeId', e.target.value)}
+              />
+              <Button onClick={() => handleSyncPlatform('google')}>
+                Sync Google Reviews
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Yelp Integration */}
+    <Card>
+      <CardHeader>
+        <CardTitle>Yelp Reviews Integration</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="yelp-enabled"
+              checked={enabledPlatforms['yelp']}
+              onCheckedChange={(checked) => handlePlatformToggle('yelp', checked)}
             />
+            <Label>Enable Yelp Reviews</Label>
           </div>
-          <div className="flex space-x-2">
-            <Button onClick={() => handleConnectGoogle()}>
-              Connect Google Account
-            </Button>
-            <Button variant="outline" onClick={() => handleSyncReviews()}>
-              Sync Reviews
-            </Button>
+          {enabledPlatforms['yelp'] && (
+            <div className="space-y-2">
+              <Input
+                placeholder="Yelp API Key"
+                type="password"
+                value={platformCredentials.yelp?.apiKey || ''}
+                onChange={(e) => handleCredentialChange('yelp', 'apiKey', e.target.value)}
+              />
+              <Input
+                placeholder="Business ID"
+                value={platformCredentials.yelp?.businessId || ''}
+                onChange={(e) => handleCredentialChange('yelp', 'businessId', e.target.value)}
+              />
+              <Button onClick={() => handleSyncPlatform('yelp')}>
+                Sync Yelp Reviews
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Facebook Integration */}
+    <Card>
+      <CardHeader>
+        <CardTitle>Facebook Reviews Integration</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="facebook-enabled"
+              checked={enabledPlatforms['facebook']}
+              onCheckedChange={(checked) => handlePlatformToggle('facebook', checked)}
+            />
+            <Label>Enable Facebook Reviews</Label>
           </div>
-        </TabsContent>
+          {enabledPlatforms['facebook'] && (
+            <div className="space-y-2">
+              <Input
+                placeholder="Facebook Access Token"
+                type="password"
+                value={platformCredentials.facebook?.accessToken || ''}
+                onChange={(e) => handleCredentialChange('facebook', 'accessToken', e.target.value)}
+              />
+              <Input
+                placeholder="Page ID"
+                value={platformCredentials.facebook?.pageId || ''}
+                onChange={(e) => handleCredentialChange('facebook', 'pageId', e.target.value)}
+              />
+              <Button onClick={() => handleSyncPlatform('facebook')}>
+                Sync Facebook Reviews
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+</TabsContent>
       </Tabs>
     </div>
   )
